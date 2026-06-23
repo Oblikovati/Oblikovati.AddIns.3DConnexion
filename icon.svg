@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Oblikovati SpaceMouse">
+  <rect width="64" height="64" rx="12" fill="#1f2430"/>
+  <!-- the puck: a base and a cap you push/twist for 6-DOF navigation -->
+  <ellipse cx="32" cy="44" rx="18" ry="7" fill="#8893a5"/>
+  <ellipse cx="32" cy="30" rx="13" ry="9" fill="#c8cdd8"/>
+  <ellipse cx="32" cy="28" rx="13" ry="9" fill="#3ddc97"/>
+  <!-- orbit/twist arc -->
+  <path d="M19 24 a13 9 0 0 1 26 0" fill="none" stroke="#7c5cff" stroke-width="3" stroke-linecap="round"/>
+  <path d="M44 20 l3 6 l-6 -1 Z" fill="#7c5cff"/>
+  <!-- push/pull (zoom) arrows -->
+  <path d="M32 10 v8 M28 14 l4 -4 l4 4" fill="none" stroke="#7c5cff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

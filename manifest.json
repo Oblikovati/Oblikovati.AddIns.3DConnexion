@@ -1,0 +1,13 @@
+{
+  "id": "com.oblikovati.spacemouse",
+  "displayName": "Oblikovati SpaceMouse",
+  "version": "0.1.0",
+  "description": "3Dconnexion SpaceMouse support for Oblikovati: reads the device's 6-DOF motion (three translation + three rotation axes) and drives the viewport camera — orbit, pan, zoom and roll — for fluid one-handed navigation while you model. Includes ribbon controls to toggle navigation, recenter the view, and tune sensitivity.",
+  "license": "GPL-2.0-only",
+  "sourceRepo": "https://github.com/Oblikovati/Oblikovati.AddIns.3DConnexion",
+  "apiCompat": "0.91",
+  "capabilities": [
+    "commands",
+    "view"
+  ]
+}

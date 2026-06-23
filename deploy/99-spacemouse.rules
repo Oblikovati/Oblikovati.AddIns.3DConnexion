@@ -1,0 +1,11 @@
+# 3Dconnexion SpaceMouse — let a normal user read the device node so the Oblikovati
+# SpaceMouse add-in can open it without root. Install to /etc/udev/rules.d/ then reload:
+#
+#   sudo cp deploy/99-spacemouse.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules && sudo udevadm trigger
+#
+# Covers the current 3Dconnexion vendor id (256f) and the legacy Logitech id (046d) older
+# pucks shipped under. MODE 0666 makes the hidraw node world-readable; switch to
+# GROUP="plugdev", MODE="0660" if you prefer group-scoped access.
+KERNEL=="hidraw*", ATTRS{idVendor}=="256f", MODE="0666", TAG+="uaccess"
+KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c6*", MODE="0666", TAG+="uaccess"

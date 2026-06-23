@@ -2,10 +2,13 @@
 
 package device
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
-// SpaceMouse USB identity matching. This is pure (a HID_ID string in, a bool out) so it is
-// unit-tested in CI; the Linux reader does only the sysfs I/O around it.
+// SpaceMouse USB identity matching. This is pure (vendor/product in, a bool out) so it is
+// unit-tested in CI; the per-OS readers do only the platform I/O around it.
 //
 // The current 3Dconnexion vendor id (256f) is exclusively theirs, so any product matches.
 // The LEGACY id older pucks shipped under is Logitech's (046d), which is shared with every
@@ -13,10 +16,25 @@ import "strings"
 // (0xc6xx). Matching 046d on vendor alone would wrongly grab e.g. a "Logitech USB
 // Receiver" (046d:c548).
 const (
-	vendor3Dconnexion = "256f"
-	vendorLogitech    = "046d"
-	logitech3DxPrefix = "c6" // 3Dconnexion SpaceMouse/SpaceNavigator product range under 046d
+	vid3Dconnexion = 0x256f
+	vidLogitech    = 0x046d
+	logitech3DxLo  = 0xc600 // 3Dconnexion SpaceMouse/SpaceNavigator product range under 046d
+	logitech3DxHi  = 0xc6ff
 )
+
+// isSpaceMouseVIDPID reports whether a USB vendor/product id pair is a 3Dconnexion
+// SpaceMouse. Used directly by the Windows reader (raw VID/PID) and via isSpaceMouseID by
+// the Linux reader (sysfs HID_ID string).
+func isSpaceMouseVIDPID(vid, pid uint16) bool {
+	switch vid {
+	case vid3Dconnexion:
+		return true
+	case vidLogitech:
+		return pid >= logitech3DxLo && pid <= logitech3DxHi
+	default:
+		return false
+	}
+}
 
 // isSpaceMouseID reports whether a sysfs HID_ID (bus:vendor:product, hex, e.g.
 // "0003:0000256F:0000C62E") identifies a 3Dconnexion SpaceMouse.
@@ -25,23 +43,20 @@ func isSpaceMouseID(hidID string) bool {
 	if len(parts) != 3 {
 		return false
 	}
-	vendor := low16(parts[1])
-	product := low16(parts[2])
-	switch vendor {
-	case vendor3Dconnexion:
-		return true
-	case vendorLogitech:
-		return strings.HasPrefix(product, logitech3DxPrefix)
-	default:
+	vid, ok1 := parseHex16(parts[1])
+	pid, ok2 := parseHex16(parts[2])
+	if !ok1 || !ok2 {
 		return false
 	}
+	return isSpaceMouseVIDPID(vid, pid)
 }
 
-// low16 normalizes a hex field to its lowercase low-16-bit (4-digit) form.
-func low16(hex string) string {
-	h := strings.ToLower(strings.TrimSpace(hex))
-	if len(h) > 4 {
-		h = h[len(h)-4:]
+// parseHex16 parses a hex field to its low-16-bit value (USB ids are 16-bit; the sysfs
+// field is zero-padded to 8 hex digits).
+func parseHex16(hex string) (uint16, bool) {
+	n, err := strconv.ParseUint(strings.TrimSpace(hex), 16, 32)
+	if err != nil {
+		return 0, false
 	}
-	return h
+	return uint16(n), true
 }

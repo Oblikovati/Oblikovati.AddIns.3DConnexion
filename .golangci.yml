@@ -56,16 +56,16 @@ linters:
           - funlen
           - gocritic
         path: hostcaller\.go
-      # device/*_{linux,windows,darwin}.go are the per-OS hardware readers (cgo / syscall
-      # boilerplate); held to build/vet, not the heavier semantic linters that
-      # false-positive on platform glue.
+      # device/device_*.go are the per-OS hardware readers (cgo / syscall boilerplate);
+      # held to build/vet, not the heavier semantic linters that false-positive on platform
+      # glue. Excludes the no-op fallback (device_nodevice.go) too, which is trivial.
       - linters:
           - errcheck
           - funlen
           - gocritic
           - gocyclo
           - unparam
-        path: device/device_(linux|windows|darwin)\.go
+        path: device/device_.*\.go
     paths:
       - third_party$
       - builtin$

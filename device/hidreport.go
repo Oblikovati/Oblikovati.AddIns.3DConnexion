@@ -63,7 +63,13 @@ func decodeTranslation(s *MotionSample, report []byte) bool {
 // axis decodes one signed 16-bit little-endian value at b[0:2] and normalizes it to
 // [-1, 1] (saturating beyond full scale).
 func axis(b []byte) float64 {
-	raw := int16(uint16(b[0]) | uint16(b[1])<<8)
+	return normAxis(int16(uint16(b[0]) | uint16(b[1])<<8))
+}
+
+// normAxis normalizes a raw signed axis value to [-1, 1], saturating beyond full scale.
+// Shared by every reader (the Linux HID decode here and the macOS ConnexionDeviceState
+// axes) so they agree on the deflection scale.
+func normAxis(raw int16) float64 {
 	v := float64(raw) / fullScale
 	if v > 1 {
 		return 1

@@ -4,6 +4,26 @@ package device
 
 import "testing"
 
+func TestIsSpaceMouseVIDPID(t *testing.T) {
+	cases := []struct {
+		vid, pid uint16
+		want     bool
+	}{
+		{0x256f, 0xc62e, true},  // current vendor, SpaceMouse Compact
+		{0x256f, 0x0000, true},  // current vendor, any product
+		{0x046d, 0xc623, true},  // legacy vendor, SpaceNavigator (3Dx range)
+		{0x046d, 0xc6ff, true},  // legacy vendor, top of 3Dx range
+		{0x046d, 0xc548, false}, // legacy vendor, USB receiver (NOT 3Dx range)
+		{0x046d, 0xc52b, false}, // legacy vendor, unifying receiver
+		{0x1234, 0xc62e, false}, // unrelated vendor
+	}
+	for _, c := range cases {
+		if got := isSpaceMouseVIDPID(c.vid, c.pid); got != c.want {
+			t.Errorf("isSpaceMouseVIDPID(%#04x, %#04x) = %v, want %v", c.vid, c.pid, got, c.want)
+		}
+	}
+}
+
 func TestIsSpaceMouseID(t *testing.T) {
 	cases := []struct {
 		name  string

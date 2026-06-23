@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
+//go:build nodevice || !linux
+
 package device
 
-// The no-op opener: a Device that never produces motion. It builds everywhere so the
-// pure layers (navigate, bridge) compile and test with CGO_ENABLED=0 on any runner, and
-// it stands in on platforms without a SpaceMouse reader.
+// The no-op opener: a Device that never produces motion. It builds with `-tags nodevice`
+// (the CGO_ENABLED=0 CI jobs that exercise only the pure layers) and on any OS without a
+// real reader yet. The per-OS readers carry `//go:build GOOS && !nodevice`, so exactly one
+// Open is ever linked.
 //
-// Build-tag scheme: while only this fallback exists it carries no constraint (the default
-// on every OS). When a per-OS reader lands it gets `//go:build GOOS && !nodevice` and this
-// file gains the matching negation (`//go:build nodevice || (!linux && !windows &&
-// !darwin)`), so exactly one Open is ever linked and `-tags nodevice` forces the no-op
-// (used by the CGO_ENABLED=0 CI jobs that exercise only the pure layers).
+// As macOS and Windows readers land (M4) this negation widens to
+// `nodevice || (!linux && !windows && !darwin)`.
 
 // Open returns a device that emits no samples. It never errors: a host with no SpaceMouse
 // support compiled in still loads the add-in and its ribbon commands; navigation is just

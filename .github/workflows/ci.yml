@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    # bash on every OS for consistent shell semantics (Windows' default pwsh
+    # mangles `gotestsum -- -coverprofile=...` and the inline build script).
+    shell: bash
+
+# The oblikovati-spacemouse add-in (module oblikovati.org/spacemouse). The SHIPPED
+# c-shared library links only the Apache-2.0 contract (oblikovati.org/api), pinned in
+# go.mod to the latest published API release; the GPL application module (oblikovati.org)
+# is pulled in solely by the add-in<->host integration tests. Both are sibling repos wired
+# by the local .github/actions/siblings composite (ADR-0018), which checks api out at the
+# pinned release so CI validates against exactly what ships.
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: ./.github/actions/siblings
+      - uses: golangci/golangci-lint-action@9fae48acfc02a90574d7c304a1758ef9895495fa # v7
+        with:
+          version: v2.1.0
+
+  # SPDX: every Go file in this GPL repo must carry GPL-2.0-only.
+  spdx:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: python3 scripts/add-spdx-headers.py --check
+
+  # Tier 1 — the pure layers (camera math, bridge, neutral device types) on every OS with
+  # CGO_ENABLED=0 and -tags nodevice, so the per-OS hardware readers (cgo/syscall) are not
+  # compiled. This is the coverage gate (project rule: >80%).
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: ./.github/actions/siblings
+      - run: go install gotest.tools/gotestsum@v1.12.0
+      - name: Test
+        run: gotestsum --junitfile test-results-${{ matrix.os }}.xml -- -tags nodevice -coverprofile=coverage.out -covermode=count ./navigate/... ./bridge/... ./device/...
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: test-results-${{ matrix.os }}
+          path: test-results-${{ matrix.os }}.xml
+
+  # Race detector needs cgo; Linux only. Runs the pure layers (the device read loop is
+  # exercised through the engine with a fake device).
+  race:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: ./.github/actions/siblings
+      - run: go test -tags nodevice -race ./navigate/... ./bridge/...
+
+  # Build the SHIPPED add-in: the cgo c-shared library (.so/.dll/.dylib) on every OS with
+  # its real per-OS device reader compiled in (catches binding/link breakage).
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      CGO_ENABLED: "1"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: ./.github/actions/siblings
+      - name: Build c-shared library
+        run: |
+          EXT=so
+          [ "$RUNNER_OS" = "Windows" ] && EXT=dll
+          [ "$RUNNER_OS" = "macOS" ] && EXT=dylib
+          echo "building oblikovati-spacemouse.$EXT"
+          mkdir -p build
+          go build -buildmode=c-shared -o "build/oblikovati-spacemouse.$EXT" .
+      - uses: actions/upload-artifact@v6
+        with:
+          name: oblikovati-spacemouse-${{ matrix.os }}
+          path: build/oblikovati-spacemouse.*

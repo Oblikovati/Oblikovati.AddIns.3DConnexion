@@ -27,6 +27,12 @@ go.work.sum
 # env file
 .env
 
+# The c-shared library build output (Makefile writes here).
+/build/
+
+# C ABI header vendored from the oblikovati.org/api module by `make sync-header`.
+/include/
+
 # Editor/IDE
 # .idea/
 # .vscode/

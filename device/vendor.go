@@ -10,30 +10,53 @@ import (
 // SpaceMouse USB identity matching. This is pure (vendor/product in, a bool out) so it is
 // unit-tested in CI; the per-OS readers do only the platform I/O around it.
 //
-// The current 3Dconnexion vendor id (256f) is exclusively theirs, so any product matches.
-// The LEGACY id older pucks shipped under is Logitech's (046d), which is shared with every
-// Logitech mouse/keyboard/receiver — so it counts only for the 3Dconnexion product range
-// (0xc6xx). Matching 046d on vendor alone would wrongly grab e.g. a "Logitech USB
-// Receiver" (046d:c548).
-const (
-	vid3Dconnexion = 0x256f
-	vidLogitech    = 0x046d
-	logitech3DxLo  = 0xc600 // 3Dconnexion SpaceMouse/SpaceNavigator product range under 046d
-	logitech3DxHi  = 0xc6ff
-)
+// Matching is an EXPLICIT allowlist of the actual 6-DOF devices, not a vendor (or vendor
+// range) heuristic — because neither vendor id is safe to match broadly:
+//   - 0x046d is Logitech's, shared with every Logitech mouse/keyboard/receiver (the
+//     pre-2013 3Dconnexion pucks were Logitech-branded and used it);
+//   - 0x256f is 3Dconnexion's own, but it also covers their CadMouse line, which are
+//     ordinary 2D mice — not 6-DOF pucks — and must NOT be driven as a camera.
+// So we list the known SpaceMouse / SpaceNavigator / SpaceExplorer / SpacePilot /
+// SpaceBall product ids only. Source: the spacenavd / libspnav device tables.
 
-// isSpaceMouseVIDPID reports whether a USB vendor/product id pair is a 3Dconnexion
+// id packs a vendor+product into one comparable key.
+func id(vid, pid uint16) uint32 { return uint32(vid)<<16 | uint32(pid) }
+
+// spaceMouseDevices is the allowlist of 6-DOF 3Dconnexion devices. CadMouse (256f:c650,
+// 256f:c651) is intentionally absent — it is a 2D mouse.
+var spaceMouseDevices = map[uint32]struct{}{
+	// Legacy, Logitech-branded (vendor 0x046d).
+	id(0x046d, 0xc603): {}, // SpaceMouse Plus XT
+	id(0x046d, 0xc605): {}, // CADman
+	id(0x046d, 0xc606): {}, // SpaceMouse Classic
+	id(0x046d, 0xc621): {}, // SpaceBall 5000
+	id(0x046d, 0xc623): {}, // SpaceTraveler
+	id(0x046d, 0xc625): {}, // SpacePilot
+	id(0x046d, 0xc626): {}, // SpaceNavigator
+	id(0x046d, 0xc627): {}, // SpaceExplorer
+	id(0x046d, 0xc628): {}, // SpaceNavigator for Notebooks
+	id(0x046d, 0xc629): {}, // SpacePilot Pro
+	id(0x046d, 0xc62b): {}, // SpaceMouse Pro
+	id(0x046d, 0xc640): {}, // nulooq
+
+	// Current, 3Dconnexion-branded (vendor 0x256f).
+	id(0x256f, 0xc62e): {}, // SpaceMouse Wireless (cabled)
+	id(0x256f, 0xc62f): {}, // SpaceMouse Wireless receiver
+	id(0x256f, 0xc631): {}, // SpaceMouse Pro Wireless
+	id(0x256f, 0xc632): {}, // SpaceMouse Pro Wireless receiver
+	id(0x256f, 0xc633): {}, // SpaceMouse Enterprise
+	id(0x256f, 0xc635): {}, // SpaceMouse Compact
+	id(0x256f, 0xc636): {}, // SpaceMouse Module
+	id(0x256f, 0xc638): {}, // SpaceMouse Pro 2
+	id(0x256f, 0xc652): {}, // 3Dconnexion Universal Receiver
+}
+
+// isSpaceMouseVIDPID reports whether a USB vendor/product id pair is a known 6-DOF
 // SpaceMouse. Used directly by the Windows reader (raw VID/PID) and via isSpaceMouseID by
 // the Linux reader (sysfs HID_ID string).
 func isSpaceMouseVIDPID(vid, pid uint16) bool {
-	switch vid {
-	case vid3Dconnexion:
-		return true
-	case vidLogitech:
-		return pid >= logitech3DxLo && pid <= logitech3DxHi
-	default:
-		return false
-	}
+	_, ok := spaceMouseDevices[id(vid, pid)]
+	return ok
 }
 
 // isSpaceMouseID reports whether a sysfs HID_ID (bus:vendor:product, hex, e.g.

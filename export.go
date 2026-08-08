@@ -25,7 +25,11 @@ import (
 	"oblikovati.org/spacemouse/device"
 )
 
-const addInID = "com.oblikovati.spacemouse"
+// addInID is the catalogue identity this add-in publishes and loads under. It MUST stay
+// equal to manifest.json's "id": the catalogue rejects a bundle whose manifest id differs
+// from the published name, and addins.oblikovati.org authorizes the publish by that same
+// name — a drift here 401s the release pipeline (guarded by releaseguard).
+const addInID = "com.oblikovati.3d-connexion"
 
 var (
 	idC  = C.CString(addInID)

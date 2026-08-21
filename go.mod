@@ -15,4 +15,4 @@ module oblikovati.org/spacemouse
 
 go 1.24.0
 
-require oblikovati.org/api v0.147.0
+require oblikovati.org/api v0.148.0

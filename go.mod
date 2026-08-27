@@ -13,6 +13,6 @@
 // replace); CI injects the equivalent replaces via .github/actions/siblings.
 module oblikovati.org/spacemouse
 
-go 1.24.0
+go 1.27.0
 
-require oblikovati.org/api v0.151.1
+require oblikovati.org/api v0.153.1

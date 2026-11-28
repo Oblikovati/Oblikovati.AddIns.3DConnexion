@@ -1,3 +1,5 @@
+//go:build cgo
+
 // SPDX-License-Identifier: GPL-2.0-only
 
 // Command oblikovati-spacemouse is built as a c-shared library (.so/.dll/.dylib) and

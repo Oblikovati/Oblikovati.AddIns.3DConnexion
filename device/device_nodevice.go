@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
-//go:build nodevice || (!linux && !windows && !darwin) || (darwin && !cgo)
+//go:build nodevice || (!linux && !windows && !darwin && !(js && wasm)) || (darwin && !cgo)
 
 package device
 

@@ -110,3 +110,25 @@ jobs:
         with:
           name: oblikovati-spacemouse-${{ matrix.os }}
           path: build/oblikovati-spacemouse.*
+
+  build-wasm:
+    runs-on: ubuntu-latest
+    env:
+      GOOS: js
+      GOARCH: wasm
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: ./.github/actions/siblings
+      - name: Build js-wasm add-in
+        run: |
+          mkdir -p build
+          go build -o build/oblikovati-spacemouse.wasm .
+      - uses: actions/upload-artifact@v6
+        with:
+          name: oblikovati-spacemouse-js-wasm
+          path: build/oblikovati-spacemouse.wasm
